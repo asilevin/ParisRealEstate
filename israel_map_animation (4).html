@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Carte - Sharon Region</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: #000;
+            overflow: hidden;
+        }
+        #upload-screen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        #upload-screen h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        #status {
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .upload-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .upload-box label {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .upload-box input {
+            font-size: 16px;
+            padding: 10px;
+        }
+        #start-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 20px 50px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        #start-btn:hover {
+            transform: scale(1.05);
+        }
+        #start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: #1a1a1a;
+            display: none;
+        }
+        .map-layer {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+        .pin-marker {
+            position: absolute;
+            opacity: 0;
+            z-index: 100;
+            animation: dropPin 0.6s ease-out forwards;
+        }
+        @keyframes dropPin {
+            0% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            60% {
+                transform: translateY(10px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .pin {
+            font-size: 56px;
+            line-height: 1;
+            position: absolute;
+            transform: translate(-50%, -100%);
+        }
+        .pin-label {
+            position: absolute;
+            top: -80px;
+            left: 35px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            border: 4px solid #667eea;
+            min-width: 200px;
+        }
+        .pin-label .location-name {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .pin-label .details {
+            color: #764ba2;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="upload-screen">
+        <h1>📍 Téléchargez les 3 cartes</h1>
+        <div id="status">0/3 cartes téléchargées</div>
+        <div class="upload-box">
+            <label>1. MAP ZOOM OUT.JPG</label>
+            <input type="file" id="file1" accept="image/*">
+        </div>
+        <div class="upload-box">
+            <label>2. MAP ZOOM IN 1.JPG</label>
+            <input type="file" id="file2" accept="image/*">
+        </div>
+        <div class="upload-box">
+            <label>3. MAP ZOOM IN 2.JPG</label>
+            <input type="file" id="file3" accept="image/*">
+        </div>
+        <button id="start-btn" disabled>▶ Démarrer l'animation</button>
+    </div>
+
+    <div id="container">
+        <img id="map1" class="map-layer" alt="Map Zoom Out">
+        <img id="map2" class="map-layer" alt="Map Zoom In 1">
+        <img id="map3" class="map-layer" alt="Map Zoom In 2">
+    </div>
+
+    <script>
+        const locations = [
+            { name: 'Binyamina', x: 55, y: 35, details: '10 unités de logement' },
+            { name: 'Givat Ada', x: 58, y: 32, details: '12 unités de logement' },
+            { name: 'Zikhron Ya\'akov', x: 60, y: 25, details: '10 unités de logement' },
+            { name: 'Or Akiva (OR YAM)', x: 48, y: 40, details: '11 unités de logement' },
+            { name: 'Netanya', x: 15, y: 75, details: 'Appartements 3/4/5 pièces' }
+        ];
+
+        const file1Input = document.getElementById('file1');
+        const file2Input = document.getElementById('file2');
+        const file3Input = document.getElementById('file3');
+        const startBtn = document.getElementById('start-btn');
+        const uploadScreen = document.getElementById('upload-screen');
+        const container = document.getElementById('container');
+        const map1 = document.getElementById('map1');
+        const map2 = document.getElementById('map2');
+        const map3 = document.getElementById('map3');
+        const status = document.getElementById('status');
+
+        let images = [null, null, null];
+
+        function checkAllFiles() {
+            const count = images.filter(img => img !== null).length;
+            status.textContent = `${count}/3 cartes téléchargées`;
+            
+            if (images[0] && images[1] && images[2]) {
+                startBtn.disabled = false;
+                status.textContent = '✅ Toutes les cartes sont prêtes!';
+                status.style.color = '#90EE90';
+            }
+        }
+
+        // Initialize status
+        checkAllFiles();
+
+        file1Input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    images[0] = event.target.result;
+                    map1.src = images[0];
+                    checkAllFiles();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        file2Input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    images[1] = event.target.result;
+                    map2.src = images[1];
+                    checkAllFiles();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        file3Input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    images[2] = event.target.result;
+                    map3.src = images[2];
+                    checkAllFiles();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function createPin(location) {
+            const marker = document.createElement('div');
+            marker.className = 'pin-marker';
+            marker.style.left = location.x + '%';
+            marker.style.top = location.y + '%';
+
+            marker.innerHTML = `
+                <div class="pin">📌</div>
+                <div class="pin-label">
+                    <div class="location-name">${location.name}</div>
+                    <div class="details">${location.details}</div>
+                </div>
+            `;
+
+            return marker;
+        }
+
+        function startAnimation() {
+            uploadScreen.style.display = 'none';
+            container.style.display = 'block';
+
+            // Step 1: Show MAP ZOOM OUT for 4 seconds
+            map1.style.opacity = '1';
+
+            setTimeout(() => {
+                // Step 2: Transition to MAP ZOOM IN 1 for 3 seconds
+                map1.style.opacity = '0';
+                map2.style.opacity = '1';
+
+                setTimeout(() => {
+                    // Step 3: Transition to MAP ZOOM IN 2
+                    map2.style.opacity = '0';
+                    map3.style.opacity = '1';
+
+                    // Step 4: Add pins one by one after 2.5 seconds
+                    setTimeout(() => {
+                        locations.forEach((location, index) => {
+                            setTimeout(() => {
+                                const pin = createPin(location);
+                                container.appendChild(pin);
+                            }, index * 800);
+                        });
+                    }, 2500);
+                }, 3000);
+            }, 4000);
+        }
+
+        startBtn.addEventListener('click', startAnimation);
+    </script>
+</body>
+</html>
