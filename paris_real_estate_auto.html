@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Carte - Salon Immobilier Paris 2025</title>
+    <style>
+        :root {
+            --primary-blue: #1e3a8a;
+            --secondary-blue: #3b82f6;
+            --accent-gold: #f59e0b;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --background-dark: #111827;
+            --background-light: #f9fafb;
+            --border-radius: 12px;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: var(--background-dark);
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+
+        /* Main Animation Container */
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: var(--background-dark);
+            display: block;
+        }
+
+        .map-layer {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+        }
+
+        /* Logo */
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1500;
+            max-width: 150px;
+            max-height: 80px;
+            opacity: 0.9;
+            transition: opacity 2s ease-in-out;
+        }
+
+
+
+        /* Pin Markers */
+        .pin-marker {
+            position: absolute;
+            opacity: 0;
+            z-index: 100;
+            animation: dropPin 0.8s ease-out forwards;
+        }
+
+        @keyframes dropPin {
+            0% {
+                transform: translateY(-100px) scale(0.5);
+                opacity: 0;
+            }
+            60% {
+                transform: translateY(10px) scale(1.1);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .pin {
+            font-size: 48px;
+            line-height: 1;
+            position: absolute;
+            transform: translate(-50%, 0%);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .pin-label {
+            position: absolute;
+            top: -80px;
+            left: 35px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            white-space: nowrap;
+            border: 3px solid #6b46c1;
+            min-width: 200px;
+        }
+
+        .pin-label .location-name {
+            color: #6b46c1;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .pin-label .details {
+            color: #6b46c1;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #loading-screen h1 {
+                font-size: 32px;
+            }
+            
+            .subtitle-text {
+                font-size: 18px;
+                padding: 15px 20px;
+            }
+            
+            .pin-label {
+                min-width: 150px;
+                padding: 10px 15px;
+            }
+            
+            .pin-label .location-name {
+                font-size: 16px;
+            }
+            
+            .pin-label .details {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Animation Container -->
+    <div id="container">
+        <img id="map1" class="map-layer" alt="Map Zoom Out">
+        <img id="map2" class="map-layer" alt="Map Zoom In 1">
+        <img id="map3" class="map-layer" alt="Map Zoom In 2">
+        
+        <!-- Logo -->
+        <img id="logo" class="logo" alt="Logo" src="logo.png">
+        
+    </div>
+
+    <script>
+        // Configuration
+        const locations = [
+            { name: 'Binyamina', x: 55, y: 45, details: '10 unités de logement', pinAbove: true },
+            { name: 'Or Akiva', x: 60, y: 32, details: '11 unités de logement', pinRight: true },
+            { name: 'Givat Ada', x: 80, y: 53, details: '12 unités de logement', pinAbove: true },
+            { name: 'Zikhron Ya\'akov', x: 81, y: 22, details: '10 unités de logement' },
+            { name: 'Netanya', x: 15, y: 60, details: 'Appartements 3/4/5 pièces' }
+        ];
+
+
+        // DOM Elements
+        const container = document.getElementById('container');
+        const map1 = document.getElementById('map1');
+        const map2 = document.getElementById('map2');
+        const map3 = document.getElementById('map3');
+
+        // State
+        let animationStartTime = 0;
+        let isPlaying = false;
+        let animationId = null;
+
+        // Image paths
+        const imagePaths = [
+            'MAP ZOOM OUT.png',
+            'MAP ZOOM IN 1.png', 
+            'MAP ZOOM IN 2.png'
+        ];
+
+        // Load images and start animation immediately
+        function loadImages() {
+            imagePaths.forEach((path, index) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Assign to map elements
+                    if (index === 0) map1.src = path;
+                    else if (index === 1) map2.src = path;
+                    else if (index === 2) map3.src = path;
+                };
+                img.src = path;
+            });
+            
+            // Start animation immediately
+            setTimeout(() => {
+                startAnimation();
+            }, 100);
+        }
+
+
+        // Pin Creation
+        function createPin(location) {
+            const marker = document.createElement('div');
+            marker.className = 'pin-marker';
+            marker.style.left = location.x + '%';
+            marker.style.top = location.y + '%';
+
+            // Check if pin should be above the label
+            const pinAbove = location.pinAbove;
+            
+            // Special positioning for Binyamina
+            if (location.name === 'Binyamina') {
+                marker.innerHTML = `
+                    <div class="pin" style="transform: translate(400%, -100%); z-index: 200;">📌</div>
+                    <div class="pin-label" style="top: 20px; z-index: 100;">
+                        <div class="location-name">${location.name}</div>
+                        <div class="details">${location.details}</div>
+                    </div>
+                `;
+            } else if (location.name === 'Or Akiva') {
+                marker.innerHTML = `
+                    <div class="pin" style="transform: translate(100%, 20%); z-index: 200;">📌</div>
+                    <div class="pin-label" style="top: -80px; z-index: 100;">
+                        <div class="location-name">${location.name}</div>
+                        <div class="details">${location.details}</div>
+                    </div>
+                `;
+            } else if (location.name === 'Givat Ada') {
+                marker.innerHTML = `
+                    <div class="pin" style="transform: translate(20%, -100%); z-index: 200;">📌</div>
+                    <div class="pin-label" style="top: 20px; z-index: 100;">
+                        <div class="location-name">${location.name}</div>
+                        <div class="details">${location.details}</div>
+                    </div>
+                `;
+            } else if (location.name === 'Zikhron Ya\'akov') {
+                marker.innerHTML = `
+                    <div class="pin" style="transform: translate(50%, 15%); z-index: 200;">📌</div>
+                    <div class="pin-label" style="top: -80px; z-index: 100;">
+                        <div class="location-name">${location.name}</div>
+                        <div class="details">${location.details}</div>
+                    </div>
+                `;
+            } else {
+                marker.innerHTML = `
+                    <div class="pin" style="transform: translate(-50%, ${pinAbove ? '-100%' : '0%'});">📌</div>
+                    <div class="pin-label" style="top: ${pinAbove ? '20px' : '-80px'};">
+                        <div class="location-name">${location.name}</div>
+                        <div class="details">${location.details}</div>
+                    </div>
+                `;
+            }
+
+            return marker;
+        }
+
+        // Animation Control
+        function startAnimation() {
+            // Start the animation sequence immediately
+            runAnimationSequence();
+        }
+
+        function runAnimationSequence() {
+            animationStartTime = Date.now();
+            isPlaying = true;
+            
+            // Step 1: Show MAP ZOOM OUT for 3 seconds
+            map1.style.opacity = '1';
+
+            setTimeout(() => {
+                // Step 2: Transition to MAP ZOOM IN 1 for 3 seconds
+                map1.style.opacity = '0';
+                map2.style.opacity = '1';
+
+                setTimeout(() => {
+                    // Step 3: Transition to MAP ZOOM IN 2
+                    map2.style.opacity = '0';
+                    map3.style.opacity = '1';
+
+                    // Step 4: Add pins one by one after 2.5 seconds
+                    setTimeout(() => {
+                        locations.forEach((location, index) => {
+                            setTimeout(() => {
+                                const pin = createPin(location);
+                                container.appendChild(pin);
+                            }, index * 800);
+                        });
+                        
+                        // Complete animation
+                        setTimeout(() => {
+                            isPlaying = false;
+                        }, locations.length * 800 + 1000);
+                        
+                    }, 2500);
+                }, 3000);
+            }, 3000);
+            
+        }
+
+
+
+        // Initialize - Start loading images automatically
+        window.addEventListener('load', () => {
+            loadImages();
+        });
+    </script>
+</body>
+</html>
