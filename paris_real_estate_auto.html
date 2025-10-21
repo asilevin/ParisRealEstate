@@ -196,9 +196,9 @@
 
     <!-- Fullscreen Prompt -->
     <div id="fullscreen-prompt" class="fullscreen-prompt">
-        <h2>🎬 Animation en Plein Écran</h2>
-        <p>Cliquez pour lancer l'animation en plein écran</p>
-        <button onclick="startFullscreenAnimation()">▶ Démarrer l'Animation</button>
+        <h2>🎬 Full Screen Animation</h2>
+        <p>Click to start the animation in full screen mode</p>
+        <button onclick="startFullscreenAnimation()">▶ Start Animation</button>
     </div>
 
     <!-- Main Animation Container -->
@@ -349,15 +349,17 @@
                             }, index * 800);
                         });
                         
-                        // Complete animation
+                        // Complete animation and restart loop
                         setTimeout(() => {
-                            isPlaying = false;
+                            // Restart the animation loop
+                            setTimeout(() => {
+                                runAnimationSequence();
+                            }, 2000); // 2 second pause before restart
                         }, locations.length * 800 + 1000);
                         
                     }, 2500);
                 }, 3000);
             }, 3000);
-            
         }
 
 
@@ -388,11 +390,28 @@
             loadImages();
         }
 
+        // Stop animation on keypress
+        function stopAnimation() {
+            isPlaying = false;
+            // Clear all timeouts
+            const highestTimeoutId = setTimeout(() => {}, 0);
+            for (let i = 0; i < highestTimeoutId; i++) {
+                clearTimeout(i);
+            }
+            // Clear all pins
+            document.querySelectorAll('.pin-marker').forEach(pin => pin.remove());
+            // Hide all maps
+            [map1, map2, map3].forEach(map => map.style.opacity = '0');
+        }
+
         // Initialize - Show prompt on load
         window.addEventListener('load', () => {
             // Show the fullscreen prompt
             document.getElementById('fullscreen-prompt').style.display = 'block';
         });
+
+        // Listen for any keypress to stop animation
+        document.addEventListener('keydown', stopAnimation);
     </script>
 </body>
 </html>
