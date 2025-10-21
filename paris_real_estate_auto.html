@@ -58,8 +58,8 @@
             top: 20px;
             left: 20px;
             z-index: 1500;
-            max-width: 150px;
-            max-height: 80px;
+            max-width: 250px;
+            max-height: 120px;
             opacity: 0.9;
             transition: opacity 2s ease-in-out;
         }
@@ -312,9 +312,25 @@
 
 
 
+        // Full screen functionality
+        function enterFullscreen() {
+            const container = document.getElementById('container');
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
+        }
+
         // Initialize - Start loading images automatically
         window.addEventListener('load', () => {
             loadImages();
+            // Enter fullscreen after a short delay
+            setTimeout(() => {
+                enterFullscreen();
+            }, 500);
         });
     </script>
 </body>
