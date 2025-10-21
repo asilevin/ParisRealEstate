@@ -31,6 +31,49 @@
             user-select: none;
         }
 
+        /* Fullscreen prompt */
+        .fullscreen-prompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            z-index: 2000;
+            border: 2px solid var(--accent-gold);
+            backdrop-filter: blur(10px);
+        }
+
+        .fullscreen-prompt h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: var(--accent-gold);
+        }
+
+        .fullscreen-prompt p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .fullscreen-prompt button {
+            background: var(--accent-gold);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .fullscreen-prompt button:hover {
+            background: #fbbf24;
+            transform: scale(1.05);
+        }
+
 
         /* Main Animation Container */
         #container {
@@ -150,6 +193,13 @@
     </style>
 </head>
 <body>
+
+    <!-- Fullscreen Prompt -->
+    <div id="fullscreen-prompt" class="fullscreen-prompt">
+        <h2>🎬 Animation en Plein Écran</h2>
+        <p>Cliquez pour lancer l'animation en plein écran</p>
+        <button onclick="startFullscreenAnimation()">▶ Démarrer l'Animation</button>
+    </div>
 
     <!-- Main Animation Container -->
     <div id="container">
@@ -316,7 +366,9 @@
         function enterFullscreen() {
             const container = document.getElementById('container');
             if (container.requestFullscreen) {
-                container.requestFullscreen();
+                container.requestFullscreen().catch(err => {
+                    console.log('Fullscreen failed:', err);
+                });
             } else if (container.webkitRequestFullscreen) {
                 container.webkitRequestFullscreen();
             } else if (container.msRequestFullscreen) {
@@ -324,13 +376,22 @@
             }
         }
 
-        // Initialize - Start loading images automatically
-        window.addEventListener('load', () => {
+        // Start fullscreen animation
+        function startFullscreenAnimation() {
+            // Hide the prompt
+            document.getElementById('fullscreen-prompt').style.display = 'none';
+            
+            // Enter fullscreen
+            enterFullscreen();
+            
+            // Start the animation
             loadImages();
-            // Enter fullscreen after a short delay
-            setTimeout(() => {
-                enterFullscreen();
-            }, 500);
+        }
+
+        // Initialize - Show prompt on load
+        window.addEventListener('load', () => {
+            // Show the fullscreen prompt
+            document.getElementById('fullscreen-prompt').style.display = 'block';
         });
     </script>
 </body>
