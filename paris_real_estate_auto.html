@@ -327,8 +327,16 @@
             animationStartTime = Date.now();
             isPlaying = true;
             
+            // Clear any existing pins
+            document.querySelectorAll('.pin-marker').forEach(pin => pin.remove());
+            
+            // Hide all maps first
+            [map1, map2, map3].forEach(map => map.style.opacity = '0');
+            
             // Step 1: Show MAP ZOOM OUT for 3 seconds
-            map1.style.opacity = '1';
+            setTimeout(() => {
+                map1.style.opacity = '1';
+            }, 100);
 
             setTimeout(() => {
                 // Step 2: Transition to MAP ZOOM IN 1 for 3 seconds
@@ -351,10 +359,12 @@
                         
                         // Complete animation and restart loop
                         setTimeout(() => {
-                            // Restart the animation loop
+                            // Restart the animation loop after 3 seconds
                             setTimeout(() => {
-                                runAnimationSequence();
-                            }, 2000); // 2 second pause before restart
+                                if (isPlaying) {
+                                    runAnimationSequence();
+                                }
+                            }, 3000);
                         }, locations.length * 800 + 1000);
                         
                     }, 2500);
